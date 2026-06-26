@@ -29,11 +29,17 @@ def main():
         ms.meshing_repair_non_manifold_edges()
         ms.meshing_repair_non_manifold_vertices()
 
-        if config.fix_normals:
-            ms.meshing_re_orient_faces_coherently()
-
         if config.close_holes:
-            ms.meshing_close_holes(maxholesize=config.max_hole_size)
+            try:
+                ms.meshing_close_holes(maxholesize=config.max_hole_size)
+            except:
+                pass
+
+        if config.fix_normals:
+            try:
+                ms.meshing_re_orient_faces_coherently()
+            except:
+                pass
 
         # Save result to same path (overwrites original)
         ms.save_current_mesh(str(mesh_path))
