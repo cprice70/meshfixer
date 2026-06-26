@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: meshfixer.dmg
+          - os: windows-latest
+            artifact: meshfixer-setup.exe
+          - os: ubuntu-22.04
+            artifact: MeshFixer.AppImage
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install deps
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          uv run pyinstaller --windowed --name MeshFixer --onedir meshfixer/__main__.py
+          hdiutil create -volname MeshFixer -srcfolder dist/MeshFixer.app -ov -format UDZO meshfixer.dmg
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          uv run pyinstaller --windowed --name MeshFixer --onefile meshfixer/__main__.py
+          Move-Item dist\MeshFixer.exe meshfixer-setup.exe
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y fuse libfuse2
+          uv run pyinstaller --onefile --name MeshFixer meshfixer/__main__.py
+          mkdir -p AppDir/usr/bin
+          cp dist/MeshFixer AppDir/usr/bin/
+          cat > AppDir/MeshFixer.desktop << 'EOF'
+          [Desktop Entry]
+          Name=MeshFixer
+          Exec=MeshFixer
+          Icon=MeshFixer
+          Type=Application
+          Categories=Graphics;
+          EOF
+          touch AppDir/MeshFixer.png
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ./appimagetool AppDir MeshFixer.AppImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            meshfixer.dmg
+            meshfixer-setup.exe
+            MeshFixer.AppImage
