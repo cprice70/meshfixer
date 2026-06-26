@@ -11,6 +11,8 @@ Cross-platform mesh repair tool for 3D printing workflows. Fixes broken STL and 
   ```
 - **GUI**: Desktop application with before/after stats
 - **Cross-platform**: Windows, macOS, Linux
+- **Multi-engine support**: Choose from PyMeshLab, trimesh, or pymeshfix repair backends
+- **Format support**: STL and 3MF (auto or explicit format selection)
 
 ## Installation
 
@@ -45,6 +47,47 @@ For meshes with persistent topological errors, use specialized tools:
 - [Formware](https://www.formware.co/) 
 - [Blender](https://www.blender.org/) (manual with modeling tools)
 
+## Usage Examples
+
+### Repair with Default Engine (PyMeshLab)
+
+```bash
+meshfixer repair broken.stl fixed.stl
+```
+
+### Repair with Specific Engine
+
+```bash
+# Using trimesh backend
+meshfixer repair broken.stl fixed.stl --engine trimesh
+
+# Using pymeshfix backend (requires separate installation)
+meshfixer repair broken.stl fixed.stl --engine pymeshfix
+```
+
+### Repair with Format Selection
+
+```bash
+# Force output to STL
+meshfixer repair broken.stl fixed.stl --output-format stl
+
+# Force output to 3MF
+meshfixer repair broken.stl fixed.stl --output-format 3mf
+
+# Auto-select (3MF if watertight, STL otherwise)
+meshfixer repair broken.stl fixed.stl --output-format auto
+```
+
+### Diagnose Issues
+
+```bash
+# Print detailed analysis
+meshfixer diagnose broken.stl
+
+# Output as JSON
+meshfixer diagnose broken.stl --json
+```
+
 ## Repair Pipeline
 
 Automated 8-step repair:
@@ -59,16 +102,23 @@ All steps configurable via CLI flags.
 
 ## Repair Backends
 
-MeshFixer supports multiple repair backends:
-- **meshlab** (default): PyMeshLab-based repairs
-- **trimesh**: Python trimesh library
-- **pymeshfix** (optional): GPL-licensed mesh repair library
+MeshFixer supports three repair backends, each with different capabilities:
 
-To use pymeshfix, install it separately:
+- **meshlab** (default): PyMeshLab-based repairs — best general-purpose engine
+- **trimesh**: Python trimesh library — fast, lightweight option
+- **pymeshfix** (optional): GPL-licensed mesh repair — specialized for complex repairs
+
+For detailed comparison and when to use each, see [docs/ENGINES.md](docs/ENGINES.md).
+
+### Using pymeshfix
+
+The pymeshfix backend requires separate installation:
+
 ```bash
 pip install pymeshfix
 ```
-Note: pymeshfix is GPL-licensed and requires separate installation.
+
+**Important:** pymeshfix is dual-licensed under GPL-3.0 and commercial licenses. When using pymeshfix, your project and distributions must comply with the GPL-3.0 license. This does not apply to the meshlab or trimesh backends.
 
 ## License
 

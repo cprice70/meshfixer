@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 FIXTURES = Path(__file__).parent / "fixtures"
 PYTHON = sys.executable
 
@@ -72,6 +74,18 @@ def test_repair_with_engine_trimesh(tmp_path):
     assert "engine: trimesh" in result.stdout
 
 
+def test_repair_with_engine_pymeshfix(tmp_path):
+    """Test repair with --engine pymeshfix flag"""
+    pytest.importorskip("pymeshfix")
+    out = tmp_path / "fixed.stl"
+    result = run(
+        ["repair", str(FIXTURES / "broken_tetrahedron.stl"), str(out), "--engine", "pymeshfix"]
+    )
+    assert result.returncode == 0
+    assert out.exists()
+    assert "engine: pymeshfix" in result.stdout
+
+
 def test_repair_output_format_auto(tmp_path):
     """Test repair with --output-format auto (chooses format based on watertightness)"""
     # For broken mesh, auto should choose stl
@@ -99,20 +113,20 @@ def test_repair_output_format_stl(tmp_path):
 
 def test_repair_output_format_3mf(tmp_path):
     """Test repair with explicit --output-format 3mf (CLI parsing only)"""
-    # Note: 3MF export requires networkx which may not be installed
+    # Note: 3MF export requires lxml which may not be installed
     # This test verifies the CLI accepts the flag and passes it through
     out = tmp_path / "fixed.3mf"
     result = run(
         ["repair", str(FIXTURES / "broken_tetrahedron.stl"), str(out), "--output-format", "3mf"]
     )
-    # Either succeeds (if networkx available) or fails with specific error
+    # Either succeeds (if lxml available) or fails with specific error
     if result.returncode == 0:
         assert out.exists()
         assert out.suffix == ".3mf"
         assert "format: 3mf" in result.stdout
     else:
-        # If networkx missing, at least verify the flag was parsed
-        assert "format: 3mf" in result.stdout or "networkx" in result.stderr
+        # If lxml missing, at least verify the dependency error occurred
+        assert "lxml" in result.stderr or "ModuleNotFoundError" in result.stderr
 
 
 def test_repair_defaults_to_meshlab(tmp_path):
