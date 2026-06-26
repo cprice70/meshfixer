@@ -57,6 +57,19 @@ Automated 8-step repair:
 
 All steps configurable via CLI flags.
 
+## Repair Backends
+
+MeshFixer supports multiple repair backends:
+- **meshlab** (default): PyMeshLab-based repairs
+- **trimesh**: Python trimesh library
+- **pymeshfix** (optional): GPL-licensed mesh repair library
+
+To use pymeshfix, install it separately:
+```bash
+pip install pymeshfix
+```
+Note: pymeshfix is GPL-licensed and requires separate installation.
+
 ## License
 
 GPL-3.0

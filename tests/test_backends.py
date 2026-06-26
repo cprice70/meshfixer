@@ -82,3 +82,38 @@ def test_meshlab_creates_watertight_mesh(broken_ms):
     # Mesh should still be valid (has vertices and faces)
     assert stats_after.vertex_count > 0
     assert stats_after.triangle_count > 0
+
+
+def test_pymeshfix_backend_available():
+    """Test that the pymeshfix backend can be retrieved if installed."""
+    pytest.importorskip("pymeshfix")
+    backend = get_backend("pymeshfix")
+    assert backend.name == "pymeshfix"
+
+
+def test_pymeshfix_repair_on_broken_mesh(broken_ms):
+    """Test that pymeshfix backend successfully repairs a broken mesh."""
+    pytest.importorskip("pymeshfix")
+    backend = get_backend("pymeshfix")
+    config = RepairConfig()
+    result = backend.repair(broken_ms, config)
+    assert result.success is True
+
+
+def test_pymeshfix_provides_warnings(broken_ms):
+    """Test that pymeshfix backend repairs mesh and provides feedback."""
+    pytest.importorskip("pymeshfix")
+    backend = get_backend("pymeshfix")
+    config = RepairConfig()
+    result = backend.repair(broken_ms, config)
+
+    # Get stats after repair
+    stats_after = analyze_mesh(broken_ms)
+
+    # The repair should succeed
+    assert result.success is True
+    # Should have warnings about what was done
+    assert len(result.warnings) > 0
+    # Mesh should still be valid (has vertices and faces)
+    assert stats_after.vertex_count > 0
+    assert stats_after.triangle_count > 0

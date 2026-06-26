@@ -7,6 +7,13 @@ BACKENDS = {
     "meshlab": MeshlabBackend,
 }
 
+# Try to register pymeshfix backend (optional dependency)
+try:
+    from meshfixer.backends.pymeshfix_backend import PymeshfixBackend
+    BACKENDS["pymeshfix"] = PymeshfixBackend
+except ImportError:
+    pass
+
 
 def get_backend(name: str) -> Backend:
     """Get a backend by name.
