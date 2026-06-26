@@ -27,17 +27,23 @@ uv sync
 uv run meshfixer gui  # or: uv run meshfixer repair file.stl
 ```
 
-## Known Issues
+## Repair Capabilities
 
-### macOS: GUI unavailable (Qt framework conflict)
-The GUI has a segmentation fault on macOS due to bundled Qt frameworks (pymeshlab Qt5 + PySide6 Qt6 collision).
+**Handles well:**
+- Simple holes (up to 30 edges by default)
+- Basic non-manifold edges
+- Duplicate vertices/faces
+- Flipped/inconsistent face normals
 
-**Workaround**: Use CLI mode on macOS
-```bash
-uv run meshfixer repair input.stl output.stl
-```
+**Limitations:**
+- Complex structural damage (Bambu-slicer detectable issues may persist)
+- Severely non-manifold meshes may not become fully watertight
+- Very large holes or self-intersecting geometry require manual repair
 
-GUI works on Windows and Linux.
+For meshes with persistent topological errors, use specialized tools:
+- [Netfabb Basic](https://www.autodesk.com/products/fusion-360/free-trial) (free online)
+- [Formware](https://www.formware.co/) 
+- [Blender](https://www.blender.org/) (manual with modeling tools)
 
 ## Repair Pipeline
 
