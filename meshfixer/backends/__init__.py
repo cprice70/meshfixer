@@ -1,8 +1,10 @@
 from meshfixer.backends.base import Backend
 from meshfixer.backends.trimesh_backend import TrimeshBackend
+from meshfixer.backends.meshlab_backend import MeshlabBackend
 
 BACKENDS = {
     "trimesh": TrimeshBackend,
+    "meshlab": MeshlabBackend,
 }
 
 

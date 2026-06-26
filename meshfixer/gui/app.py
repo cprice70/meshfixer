@@ -25,7 +25,7 @@ class _RepairWorker(QThread):
 
     def run(self):
         from meshfixer.repair import repair_mesh as _repair
-        result = _repair(self._ms, self._config)
+        result = _repair(self._ms, self._config, engine="meshlab")
         self.finished.emit(result.success, result.warnings)
 
 

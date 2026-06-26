@@ -1,9 +1,4 @@
-from dataclasses import dataclass, field, asdict
-import json
-import subprocess
-import sys
-import tempfile
-from pathlib import Path
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -24,40 +19,20 @@ class RepairResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def repair_mesh(ms: "pymeshlab.MeshSet", config: RepairConfig) -> RepairResult:
-    import pymeshlab
+def repair_mesh(
+    ms: "pymeshlab.MeshSet", config: RepairConfig, engine: str = "meshlab"
+) -> RepairResult:
+    """Repair a mesh using the specified backend engine.
 
-    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
-        temp_path = Path(f.name)
+    Args:
+        ms: PyMeshLab MeshSet containing the mesh to repair
+        config: Repair configuration specifying which operations to perform
+        engine: Name of the repair backend to use (default: "meshlab")
 
-    try:
-        ms.save_current_mesh(str(temp_path))
+    Returns:
+        RepairResult with success status and any warnings
+    """
+    from meshfixer.backends import get_backend
 
-        result_json = subprocess.run(
-            [sys.executable, "-m", "meshfixer._repair_worker",
-             str(temp_path),
-             json.dumps(asdict(config))],
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-
-        if result_json.returncode != 0:
-            return RepairResult(success=False, warnings=[result_json.stderr])
-
-        result_data = json.loads(result_json.stdout)
-
-        ms_new = pymeshlab.MeshSet()
-        ms_new.load_new_mesh(str(temp_path))
-        mesh = ms_new.current_mesh()
-
-        ms.clear()
-        ms.add_mesh(mesh)
-
-        return RepairResult(
-            success=result_data["success"],
-            warnings=result_data.get("warnings", [])
-        )
-
-    finally:
-        temp_path.unlink(missing_ok=True)
+    backend = get_backend(engine)
+    return backend.repair(ms, config)
