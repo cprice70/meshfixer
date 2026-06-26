@@ -27,11 +27,7 @@ def main():
             ms.meshing_remove_unreferenced_vertices()
 
         ms.meshing_repair_non_manifold_edges()
-
-        try:
-            ms.meshing_repair_non_manifold_by_splitting()
-        except AttributeError:
-            warnings.append("Non-manifold vertex repair skipped (filter unavailable)")
+        ms.meshing_repair_non_manifold_vertices()
 
         if config.fix_normals:
             ms.meshing_re_orient_faces_coherently()
