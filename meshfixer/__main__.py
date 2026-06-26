@@ -41,7 +41,6 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
 
 def cmd_repair(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
-    output_path = Path(args.output) if args.output else input_path.with_stem(input_path.stem + "_fixed")
 
     try:
         ms = load_mesh(input_path)
@@ -56,7 +55,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
         close_holes=not args.skip_hole_fill,
         max_hole_size=args.max_hole_size,
     )
-    result = repair_mesh(ms, config)
+    result = repair_mesh(ms, config, engine=args.engine)
 
     if not result.success:
         for w in result.warnings:
@@ -64,13 +63,33 @@ def cmd_repair(args: argparse.Namespace) -> int:
         print("Repair failed.", file=sys.stderr)
         return 2
 
+    # Construct output path and determine output format
+    if args.output:
+        output_path = Path(args.output)
+        # When user provides explicit path, infer format from extension if using auto
+        if args.output_format == "auto":
+            ext = output_path.suffix.lower()
+            output_format = "3mf" if ext == ".3mf" else "stl"
+        else:
+            output_format = args.output_format
+    else:
+        # Determine output format: auto or explicit
+        if args.output_format == "auto":
+            stats = analyze_mesh(ms)
+            output_format = "3mf" if stats.is_watertight else "stl"
+        else:
+            output_format = args.output_format
+        # Generate output path based on determined format
+        suffix = ".3mf" if output_format == "3mf" else ".stl"
+        output_path = input_path.with_stem(input_path.stem + "_fixed").with_suffix(suffix)
+
     try:
         save_mesh(ms, output_path)
     except UnsupportedFormatError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    print(f"Repaired: {output_path}")
+    print(f"Repaired: {output_path} (engine: {args.engine}, format: {output_format})")
     for w in result.warnings:
         print(f"Warning: {w}")
     return 0
@@ -97,6 +116,18 @@ def main() -> None:
     p_rep.add_argument("output", nargs="?")
     p_rep.add_argument("--skip-hole-fill", action="store_true")
     p_rep.add_argument("--max-hole-size", type=int, default=30)
+    p_rep.add_argument(
+        "--engine",
+        choices=["meshlab", "trimesh", "pymeshfix"],
+        default="meshlab",
+        help="Repair engine to use (meshlab default)",
+    )
+    p_rep.add_argument(
+        "--output-format",
+        choices=["auto", "stl", "3mf"],
+        default="auto",
+        help="Output format (auto chooses 3MF for watertight, STL else)",
+    )
 
     sub.add_parser("gui", help="Launch graphical interface")
 
