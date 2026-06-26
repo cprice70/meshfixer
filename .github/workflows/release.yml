@@ -34,13 +34,13 @@ jobs:
       - name: Install deps
         run: uv sync
 
-      - name: Run tests
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run -a uv run pytest tests/ -v
-          else
-            uv run pytest tests/ -v
-          fi
+      - name: Run tests (Linux with xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a uv run pytest tests/ -v
+
+      - name: Run tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: uv run pytest tests/ -v
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
