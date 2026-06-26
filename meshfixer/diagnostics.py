@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-import pymeshlab
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pymeshlab
 
 
 @dataclass
@@ -14,7 +17,7 @@ class MeshStats:
     bounding_box: tuple[float, float, float]
 
 
-def analyze_mesh(ms: pymeshlab.MeshSet) -> MeshStats:
+def analyze_mesh(ms: "pymeshlab.MeshSet") -> MeshStats:
     mesh = ms.current_mesh()
     topo = ms.get_topological_measures()
 

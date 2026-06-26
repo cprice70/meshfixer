@@ -1,5 +1,8 @@
 from pathlib import Path
-import pymeshlab
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pymeshlab
 
 SUPPORTED_EXTENSIONS = {".stl", ".3mf"}
 
@@ -8,7 +11,9 @@ class UnsupportedFormatError(Exception):
     pass
 
 
-def load_mesh(path: Path) -> pymeshlab.MeshSet:
+def load_mesh(path: Path) -> "pymeshlab.MeshSet":
+    import pymeshlab
+
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
@@ -22,7 +27,7 @@ def load_mesh(path: Path) -> pymeshlab.MeshSet:
     return ms
 
 
-def save_mesh(ms: pymeshlab.MeshSet, path: Path) -> None:
+def save_mesh(ms: "pymeshlab.MeshSet", path: Path) -> None:
     path = Path(path)
     ext = path.suffix.lower()
     if ext not in SUPPORTED_EXTENSIONS:
@@ -33,7 +38,8 @@ def save_mesh(ms: pymeshlab.MeshSet, path: Path) -> None:
     ms.save_current_mesh(str(path))
 
 
-def _load_3mf(path: Path) -> pymeshlab.MeshSet:
+def _load_3mf(path: Path) -> "pymeshlab.MeshSet":
+    import pymeshlab
     import trimesh
     import numpy as np
 
@@ -51,7 +57,7 @@ def _load_3mf(path: Path) -> pymeshlab.MeshSet:
     return ms
 
 
-def _save_3mf(ms: pymeshlab.MeshSet, path: Path) -> None:
+def _save_3mf(ms: "pymeshlab.MeshSet", path: Path) -> None:
     import trimesh
     import numpy as np
 

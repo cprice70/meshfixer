@@ -1,5 +1,13 @@
-from dataclasses import dataclass, field
-import pymeshlab
+from dataclasses import dataclass, field, asdict
+import json
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pymeshlab
 
 
 @dataclass
@@ -16,32 +24,40 @@ class RepairResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def repair_mesh(ms: pymeshlab.MeshSet, config: RepairConfig) -> RepairResult:
-    warnings: list[str] = []
+def repair_mesh(ms: "pymeshlab.MeshSet", config: RepairConfig) -> RepairResult:
+    import pymeshlab
+
+    with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        temp_path = Path(f.name)
+
     try:
-        if config.remove_duplicates:
-            ms.meshing_remove_duplicate_vertices()
-            ms.meshing_remove_duplicate_faces()
-            ms.meshing_remove_null_faces()
-            ms.meshing_remove_unreferenced_vertices()
+        ms.save_current_mesh(str(temp_path))
 
-        ms.meshing_repair_non_manifold_edges()
+        result_json = subprocess.run(
+            [sys.executable, "-m", "meshfixer._repair_worker",
+             str(temp_path),
+             json.dumps(asdict(config))],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
 
-        # Split non-manifold vertices — filter name varies by PyMeshLab version.
-        # If this raises, check available filters with: ms.print_filter_list()
-        try:
-            ms.meshing_repair_non_manifold_by_splitting()
-        except AttributeError:
-            warnings.append("Non-manifold vertex repair skipped (filter unavailable in this PyMeshLab version)")
+        if result_json.returncode != 0:
+            return RepairResult(success=False, warnings=[result_json.stderr])
 
-        if config.fix_normals:
-            ms.meshing_re_orient_faces_coherently()
+        result_data = json.loads(result_json.stdout)
 
-        if config.close_holes:
-            ms.meshing_close_holes(maxholesize=config.max_hole_size)
+        ms_new = pymeshlab.MeshSet()
+        ms_new.load_new_mesh(str(temp_path))
+        mesh = ms_new.current_mesh()
 
-    except Exception as e:
-        warnings.append(str(e))
-        return RepairResult(success=False, warnings=warnings)
+        ms.clear()
+        ms.add_mesh(mesh)
 
-    return RepairResult(success=True, warnings=warnings)
+        return RepairResult(
+            success=result_data["success"],
+            warnings=result_data.get("warnings", [])
+        )
+
+    finally:
+        temp_path.unlink(missing_ok=True)
