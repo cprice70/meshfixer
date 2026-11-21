@@ -32,7 +32,11 @@ class MeshlabBackend(Backend):
         """
         import pymeshlab
 
-        with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
+        # PLY is used instead of STL because STL stores single-precision,
+        # unindexed vertices: round-tripping through it loses enough precision
+        # that exact-match vertex welding stops merging previously-coincident
+        # vertices, reintroducing non-manifold edges/vertices the repair just fixed.
+        with tempfile.NamedTemporaryFile(suffix=".ply", delete=False) as f:
             temp_path = Path(f.name)
 
         try:
