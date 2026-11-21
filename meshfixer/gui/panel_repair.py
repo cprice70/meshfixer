@@ -1,8 +1,17 @@
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QCheckBox, QLabel, QSpinBox, QPushButton
+    QWidget, QHBoxLayout, QCheckBox, QComboBox, QLabel, QSpinBox, QPushButton
 )
+from meshfixer.backends import BACKENDS
 from meshfixer.repair import RepairConfig
+
+_ENGINE_TOOLTIPS = {
+    "meshlab": "PyMeshLab whole-mesh repair (general purpose)",
+    "trimesh": "Fast, lightweight trimesh repair",
+    "pymeshfix": "pymeshfix repair (GPL)",
+    "assembly": "Repair each body separately, then union them. "
+                "Use for multi-part exports; save as 3MF",
+}
 
 
 class RepairPanel(QWidget):
@@ -12,6 +21,14 @@ class RepairPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
+
+        self._engine = QComboBox()
+        for name in BACKENDS:
+            self._engine.addItem(name)
+            self._engine.setItemData(
+                self._engine.count() - 1, _ENGINE_TOOLTIPS.get(name, ""), Qt.ToolTipRole
+            )
+        self.set_engine("meshlab")
 
         self._remove_dups = QCheckBox("Remove duplicates")
         self._remove_dups.setChecked(True)
@@ -29,6 +46,8 @@ class RepairPanel(QWidget):
         save_btn = QPushButton("Save As...")
         save_btn.clicked.connect(self.save_requested)
 
+        layout.addWidget(QLabel("Engine:"))
+        layout.addWidget(self._engine)
         layout.addWidget(self._remove_dups)
         layout.addWidget(self._fix_normals)
         layout.addWidget(self._close_holes)
@@ -45,3 +64,15 @@ class RepairPanel(QWidget):
             close_holes=self._close_holes.isChecked(),
             max_hole_size=self._hole_size.value(),
         )
+
+    def available_engines(self) -> list[str]:
+        return [self._engine.itemText(i) for i in range(self._engine.count())]
+
+    def get_engine(self) -> str:
+        return self._engine.currentText()
+
+    def set_engine(self, name: str) -> None:
+        index = self._engine.findText(name)
+        if index < 0:
+            raise ValueError(f"Unknown engine: {name}")
+        self._engine.setCurrentIndex(index)

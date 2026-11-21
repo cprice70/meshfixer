@@ -15,17 +15,30 @@ from meshfixer.gui.panel_stats import StatsPanel
 from meshfixer.repair import RepairConfig, repair_mesh
 
 
+def default_save_path(input_path: Path, engine: str | None) -> Path:
+    """Suggested output path for a repaired mesh.
+
+    The assembly engine's output relies on duplicated coincident vertices
+    where bodies touch; STL re-merges those, so suggest 3MF instead.
+    """
+    out = input_path.with_stem(input_path.stem + "_fixed")
+    if engine == "assembly":
+        out = out.with_suffix(".3mf")
+    return out
+
+
 class _RepairWorker(QThread):
     finished = Signal(bool, list)
 
-    def __init__(self, ms, config: RepairConfig):
+    def __init__(self, ms, config: RepairConfig, engine: str):
         super().__init__()
         self._ms = ms
         self._config = config
+        self.engine = engine
 
     def run(self):
         from meshfixer.repair import repair_mesh as _repair
-        result = _repair(self._ms, self._config, engine="meshlab")
+        result = _repair(self._ms, self._config, engine=self.engine)
         self.finished.emit(result.success, result.warnings)
 
 
@@ -38,6 +51,7 @@ class MainWindow(QMainWindow):
         self._ms = None
         self._input_path: Path | None = None
         self._worker: _RepairWorker | None = None
+        self._repaired_engine: str | None = None
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -61,6 +75,7 @@ class MainWindow(QMainWindow):
 
     def _on_file_selected(self, path: Path):
         self._input_path = path
+        self._repaired_engine = None
         self._stats_panel.clear()
         self._status.showMessage(f"Loading {path.name}…")
         QApplication.processEvents()
@@ -79,9 +94,10 @@ class MainWindow(QMainWindow):
             self._status.showMessage("Load a file first.")
             return
         config = self._repair_panel.get_config()
-        self._status.showMessage("Repairing…")
+        engine = self._repair_panel.get_engine()
+        self._status.showMessage(f"Repairing with {engine}…")
         QApplication.processEvents()
-        self._worker = _RepairWorker(self._ms, config)
+        self._worker = _RepairWorker(self._ms, config, engine)
         self._worker.finished.connect(self._on_repair_done)
         self._worker.start()
 
@@ -89,6 +105,7 @@ class MainWindow(QMainWindow):
         if not success:
             self._status.showMessage("Repair failed. " + "; ".join(warnings))
             return
+        self._repaired_engine = self._worker.engine if self._worker else None
         stats = analyze_mesh(self._ms)
         self._stats_panel.update_after(stats)
         msg = "Repair complete."
@@ -101,7 +118,7 @@ class MainWindow(QMainWindow):
             self._status.showMessage("Load and repair a file first.")
             return
         default = str(
-            self._input_path.with_stem(self._input_path.stem + "_fixed")
+            default_save_path(self._input_path, self._repaired_engine)
         ) if self._input_path else "repaired.stl"
         path, _ = QFileDialog.getSaveFileName(
             self, "Save repaired mesh", default,
