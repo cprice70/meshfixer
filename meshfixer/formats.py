@@ -43,7 +43,9 @@ def _load_3mf(path: Path) -> "pymeshlab.MeshSet":
     import trimesh
     import numpy as np
 
-    scene = trimesh.load(str(path), force="mesh")
+    # process=False keeps the file's vertex indexing. Merging coincident
+    # vertices would turn bodies that merely touch into non-manifold geometry.
+    scene = trimesh.load(str(path), force="mesh", process=False)
     if isinstance(scene, trimesh.Scene):
         combined = trimesh.util.concatenate(list(scene.geometry.values()))
     else:
@@ -64,5 +66,5 @@ def _save_3mf(ms: "pymeshlab.MeshSet", path: Path) -> None:
     mesh = ms.current_mesh()
     vertices = np.array(mesh.vertex_matrix(), dtype=np.float64)
     faces = np.array(mesh.face_matrix(), dtype=np.int32)
-    tm = trimesh.Trimesh(vertices=vertices, faces=faces)
+    tm = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
     tm.export(str(path))

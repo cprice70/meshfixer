@@ -11,7 +11,7 @@ Cross-platform mesh repair tool for 3D printing workflows. Fixes broken STL and 
   ```
 - **GUI**: Desktop application with before/after stats
 - **Cross-platform**: Windows, macOS, Linux
-- **Multi-engine support**: Choose from PyMeshLab, trimesh, or pymeshfix repair backends
+- **Multi-engine support**: Choose from PyMeshLab, trimesh, pymeshfix, or assembly (per-body repair + boolean union) backends
 - **Format support**: STL and 3MF (auto or explicit format selection)
 
 ## Installation
@@ -61,6 +61,9 @@ meshfixer repair broken.stl fixed.stl
 # Using trimesh backend
 meshfixer repair broken.stl fixed.stl --engine trimesh
 
+# Multi-part assemblies (overlapping/touching bodies, CAD exports)
+meshfixer repair assembly.stl --engine assembly --max-hole-size 100
+
 # Using pymeshfix backend (requires separate installation)
 meshfixer repair broken.stl fixed.stl --engine pymeshfix
 ```
@@ -107,6 +110,7 @@ MeshFixer supports three repair backends, each with different capabilities:
 - **meshlab** (default): PyMeshLab-based repairs — best general-purpose engine
 - **trimesh**: Python trimesh library — fast, lightweight option
 - **pymeshfix** (optional): GPL-licensed mesh repair — specialized for complex repairs
+- **assembly**: Splits the mesh into bodies, drops zero-volume slivers, repairs each open body, then unions them with manifold3d. Use it for multi-part exports where whole-mesh repair deletes faces at the contact regions. Save as 3MF: STL cannot keep bodies that touch along an edge manifold. Bodies that stay open are dropped with a warning; raise `--max-hole-size` if that happens
 
 For detailed comparison and when to use each, see [docs/ENGINES.md](docs/ENGINES.md).
 

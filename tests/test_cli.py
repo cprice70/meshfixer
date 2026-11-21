@@ -229,3 +229,21 @@ def test_repair_with_all_engines(tmp_path):
         # Step b: Verify output file exists
         assert out.exists(), f"Output file for {engine} should exist at {out}"
         assert f"engine: {engine}" in result.stdout
+
+
+def test_repair_with_engine_assembly_auto_writes_3mf(tmp_path):
+    """Assembly engine unions overlapping bodies; watertight result auto-saves as 3MF."""
+    import trimesh
+
+    a = trimesh.creation.box(extents=(2, 2, 2))
+    b = trimesh.creation.box(extents=(2, 2, 2))
+    b.apply_translation((1, 0, 0))
+    src = tmp_path / "two_boxes.stl"
+    trimesh.util.concatenate([a, b]).export(src)
+
+    result = run(["repair", str(src), "--engine", "assembly"])
+
+    assert result.returncode == 0, result.stderr
+    assert "engine: assembly" in result.stdout
+    assert "format: 3mf" in result.stdout
+    assert (tmp_path / "two_boxes_fixed.3mf").exists()
