@@ -1,10 +1,12 @@
 from meshfixer.backends.base import Backend
 from meshfixer.backends.trimesh_backend import TrimeshBackend
 from meshfixer.backends.meshlab_backend import MeshlabBackend
+from meshfixer.backends.assembly_backend import AssemblyBackend
 
 BACKENDS = {
     "trimesh": TrimeshBackend,
     "meshlab": MeshlabBackend,
+    "assembly": AssemblyBackend,
 }
 
 # Try to register pymeshfix backend (optional dependency)

@@ -118,9 +118,12 @@ def main() -> None:
     p_rep.add_argument("--max-hole-size", type=int, default=30)
     p_rep.add_argument(
         "--engine",
-        choices=["meshlab", "trimesh", "pymeshfix"],
+        choices=["meshlab", "trimesh", "pymeshfix", "assembly"],
         default="meshlab",
-        help="Repair engine to use (meshlab default)",
+        help=(
+            "Repair engine to use (meshlab default). 'assembly' repairs each "
+            "body separately and unions them; use it for multi-part exports"
+        ),
     )
     p_rep.add_argument(
         "--output-format",

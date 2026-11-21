@@ -26,8 +26,20 @@ def main():
             ms.meshing_remove_null_faces()
             ms.meshing_remove_unreferenced_vertices()
 
-        ms.meshing_repair_non_manifold_edges()
-        ms.meshing_repair_non_manifold_vertices()
+        # Repairing non-manifold edges can introduce new non-manifold vertices
+        # and vice versa, so a single pass of each often leaves residual defects.
+        # Loop until the mesh stabilizes (or a safety cap is hit).
+        prev_count = None
+        for _ in range(10):
+            ms.meshing_repair_non_manifold_edges()
+            ms.meshing_repair_non_manifold_vertices()
+            topo = ms.get_topological_measures()
+            count = topo.get("non_two_manifold_edges", 0) + topo.get(
+                "non_two_manifold_vertices", 0
+            )
+            if count == 0 or count == prev_count:
+                break
+            prev_count = count
 
         if config.close_holes:
             try:
